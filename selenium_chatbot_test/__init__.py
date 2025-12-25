@@ -12,5 +12,5 @@ from selenium_chatbot_test.waiters import StreamWaiter
 from selenium_chatbot_test.assertions import SemanticAssert
 from selenium_chatbot_test.metrics import LatencyMonitor
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = ["StreamWaiter", "SemanticAssert", "LatencyMonitor"]
