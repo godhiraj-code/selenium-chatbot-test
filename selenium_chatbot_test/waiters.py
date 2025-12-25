@@ -10,10 +10,10 @@ from __future__ import annotations
 import logging
 from typing import Tuple, Union
 
+from selenium.common.exceptions import JavascriptException, TimeoutException
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import TimeoutException, JavascriptException
 
 logger = logging.getLogger(__name__)
 
@@ -21,26 +21,26 @@ logger = logging.getLogger(__name__)
 class StreamWaiter:
     """
     Waits for a streaming response to complete using MutationObserver.
-    
+
     Standard Selenium waits capture partial text during streaming responses.
     StreamWaiter injects a JavaScript MutationObserver that only resolves
     when the target element has been silent (no mutations) for a configurable
     timeout period, ensuring the complete response is captured.
-    
+
     Example:
         >>> from selenium_chatbot_test import StreamWaiter
         >>> from selenium.webdriver.common.by import By
-        >>> 
+        >>>
         >>> waiter = StreamWaiter()
         >>> element = waiter.wait_for_stream_end(
-        ...     driver, 
+        ...     driver,
         ...     (By.CSS_SELECTOR, ".chat-response"),
         ...     silence_timeout=0.5,
         ...     timeout=30.0
         ... )
         >>> print(element.text)  # Complete response text
     """
-    
+
     # JavaScript code for MutationObserver-based stream detection
     _OBSERVER_SCRIPT = """
     return new Promise((resolve, reject) => {
@@ -149,32 +149,32 @@ class StreamWaiter:
         driver: WebDriver,
         locator: Tuple[str, str],
         silence_timeout: float = 0.5,
-        timeout: float = 30.0
+        timeout: float = 30.0,
     ) -> WebElement:
         """
         Wait for a streaming response to complete.
-        
+
         This method injects a JavaScript MutationObserver that monitors the target
         element for mutations. It only resolves when the element has been silent
         (no mutations) for the specified silence_timeout period.
-        
+
         Args:
             driver: Selenium WebDriver instance.
-            locator: Tuple of (locator_type, locator_value), e.g., 
+            locator: Tuple of (locator_type, locator_value), e.g.,
                      (By.CSS_SELECTOR, ".response") or (By.ID, "chat-box").
             silence_timeout: Time in seconds without mutations before considering
                            the stream complete. Default is 0.5 seconds.
             timeout: Maximum time in seconds to wait for stream completion.
                     Default is 30.0 seconds.
-        
+
         Returns:
             WebElement: The target element after streaming has completed.
-        
+
         Raises:
             TimeoutException: If the stream doesn't complete within the timeout.
             JavascriptException: If there's an error executing the observer script.
             ValueError: If the locator format is invalid.
-        
+
         Example:
             >>> from selenium.webdriver.common.by import By
             >>> waiter = StreamWaiter()
@@ -189,28 +189,28 @@ class StreamWaiter:
             raise ValueError(
                 f"Locator must be a tuple of (type, value), got: {locator}"
             )
-        
+
         locator_type, locator_value = locator
         silence_timeout_ms = int(silence_timeout * 1000)
         timeout_ms = int(timeout * 1000)
-        
+
         logger.debug(
             f"Waiting for stream end on element {locator_type}={locator_value} "
             f"(silence={silence_timeout}s, timeout={timeout}s)"
         )
-        
+
         try:
             result = driver.execute_script(
                 self._OBSERVER_SCRIPT,
                 locator_type,
                 locator_value,
                 silence_timeout_ms,
-                timeout_ms
+                timeout_ms,
             )
-            
+
             logger.debug("Stream completed successfully")
             return result
-            
+
         except JavascriptException as e:
             error_msg = str(e)
             if "Timeout waiting for stream" in error_msg:

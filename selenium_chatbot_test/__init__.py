@@ -8,9 +8,9 @@ and latency monitoring.
 
 from __future__ import annotations
 
-from selenium_chatbot_test.waiters import StreamWaiter
 from selenium_chatbot_test.assertions import SemanticAssert
 from selenium_chatbot_test.metrics import LatencyMonitor
+from selenium_chatbot_test.waiters import StreamWaiter
 
 __version__ = "0.2.0"
 __all__ = ["StreamWaiter", "SemanticAssert", "LatencyMonitor"]
