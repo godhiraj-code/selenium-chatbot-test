@@ -1,12 +1,13 @@
 # Selenium Chatbot Test
 
+[![CI](https://github.com/godhiraj-code/selenium-chatbot-test/actions/workflows/ci.yml/badge.svg)](https://github.com/godhiraj-code/selenium-chatbot-test/actions/workflows/ci.yml)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-black.svg)](https://github.com/godhiraj-code/selenium-chatbot-test)
 
 A Python library that extends Selenium WebDriver to reliably test **Generative AI interfaces** — Chatbots, Copilots, and Streaming UIs.
 
-**Author**: [Dhiraj Das](https://www.dhirajdas.dev)
+**Author**: [Dhiraj Das](https://www.dhirajdas.dev) | **Version**: 0.2.0
 
 ## The Problem
 
@@ -63,15 +64,12 @@ Standard Selenium fails on GenAI interfaces because:
 ## Installation
 
 ```bash
-# Create virtual environment (recommended)
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate     # Windows
-
-# Install the package
+# Install from PyPI
 pip install selenium-chatbot-test
 
-# Or from source
+# Or install from source
+git clone https://github.com/godhiraj-code/selenium-chatbot-test.git
+cd selenium-chatbot-test
 pip install -e .
 ```
 
@@ -185,17 +183,28 @@ print(f"Mutations: {monitor.metrics.token_count}")
 ## Running the Demo
 
 ```bash
-# Install dependencies
-pip install -e .
-
 # Run the demo (uses local streaming simulation)
 python demo_chatbot.py
 
 # Run in headless mode
 python demo_chatbot.py --headless
+```
 
-# Try HuggingFace Chat (may require login)
-python demo_chatbot.py --mode huggingface
+## Development
+
+```bash
+# Clone and install dev dependencies
+git clone https://github.com/godhiraj-code/selenium-chatbot-test.git
+cd selenium-chatbot-test
+pip install -e .[dev]
+
+# Run tests
+pytest tests/ -v -m "not slow"
+
+# Run linting
+black selenium_chatbot_test tests
+isort selenium_chatbot_test tests
+mypy selenium_chatbot_test --ignore-missing-imports
 ```
 
 ## Requirements
@@ -204,6 +213,10 @@ python demo_chatbot.py --mode huggingface
 - `selenium` ≥ 4.0.0
 - `sentence-transformers` ≥ 2.2.0
 - `numpy` ≥ 1.21.0
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ## License
 

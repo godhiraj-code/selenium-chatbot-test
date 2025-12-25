@@ -112,9 +112,9 @@ def xpath_locator():
 def similar_texts():
     """Provide semantically similar text pairs."""
     return [
-        ("Hello, how can I help you today?", "Hi there, what can I assist you with?"),
-        ("The weather is nice today", "It's a beautiful day outside"),
-        ("I don't understand your question", "Could you please clarify what you mean?"),
+        ("Hello, how can I help you today?", "Hi, how may I help you?"),
+        ("The weather is beautiful today", "Today the weather is lovely"),
+        ("I am a helpful assistant", "I'm an assistant here to help"),
     ]
 
 
