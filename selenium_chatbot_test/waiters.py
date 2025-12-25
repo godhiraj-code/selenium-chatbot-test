@@ -8,7 +8,7 @@ to detect when a streaming response has completed.
 from __future__ import annotations
 
 import logging
-from typing import Tuple, Union
+from typing import Tuple, Union, cast
 
 from selenium.common.exceptions import JavascriptException, TimeoutException
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -209,7 +209,7 @@ class StreamWaiter:
             )
 
             logger.debug("Stream completed successfully")
-            return result
+            return cast(WebElement, result)
 
         except JavascriptException as e:
             error_msg = str(e)

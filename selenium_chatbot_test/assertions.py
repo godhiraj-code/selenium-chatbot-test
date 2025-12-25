@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 
@@ -33,7 +33,7 @@ class _ModelLoader:
             cls._instance._models = {}
         return cls._instance
 
-    def get_model(self, model_name: str):
+    def get_model(self, model_name: str) -> Any:
         """
         Get or load a sentence-transformer model.
 
@@ -47,7 +47,7 @@ class _ModelLoader:
             self._models[model_name] = self._load_model(model_name)
         return self._models[model_name]
 
-    def _load_model(self, model_name: str):
+    def _load_model(self, model_name: str) -> Any:
         """
         Load a sentence-transformer model with proper error handling.
 

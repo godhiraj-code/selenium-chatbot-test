@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from types import TracebackType
+from typing import Any, Optional, Tuple, Type
 
 from selenium.common.exceptions import JavascriptException
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -258,7 +259,12 @@ class LatencyMonitor:
             logger.error(f"Failed to start latency monitor: {e}")
             raise
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
         """
         Stop monitoring and retrieve metrics.
 
@@ -278,7 +284,7 @@ class LatencyMonitor:
             to prevent memory leaks.
         """
         if self._monitor_key is None:
-            return False
+            return
 
         try:
             result = self._driver.execute_script(
@@ -317,5 +323,3 @@ class LatencyMonitor:
 
         finally:
             self._monitor_key = None
-
-        return False
