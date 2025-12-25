@@ -115,14 +115,14 @@ class TestLatencyMonitorContextManager:
             assert monitor is not None
             assert isinstance(monitor, LatencyMonitor)
 
-    def test_exit_returns_false(self, mock_driver, sample_locator):
-        """Test that __exit__ returns False (doesn't suppress exceptions)."""
+    def test_exit_returns_none(self, mock_driver, sample_locator):
+        """Test that __exit__ returns None (doesn't suppress exceptions)."""
         monitor = LatencyMonitor(mock_driver, sample_locator)
         monitor.__enter__()
 
         result = monitor.__exit__(None, None, None)
 
-        assert result is False
+        assert result is None
 
     def test_observer_injected_on_enter(self, mock_driver, sample_locator):
         """Test that observer is injected when entering context."""
