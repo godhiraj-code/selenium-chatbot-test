@@ -8,10 +8,9 @@ to perform semantic similarity comparisons instead of exact string matching.
 from __future__ import annotations
 
 import logging
+import math
 import os
-from typing import Any, Optional
-
-import numpy as np
+from typing import Any, Optional, Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +59,8 @@ class _ModelLoader:
             from sentence_transformers import SentenceTransformer
         except ImportError as e:
             raise ImportError(
-                "sentence-transformers is required for semantic assertions. "
-                "Install it with: pip install sentence-transformers"
+                "Semantic assertions require the optional semantic dependencies. "
+                "Install them with: pip install 'selenium-chatbot-test[semantic]'"
             ) from e
 
         # Check if model is likely cached
@@ -209,7 +208,7 @@ class SemanticAssert:
             )
 
     @staticmethod
-    def _cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
+    def _cosine_similarity(vec1: Sequence[float], vec2: Sequence[float]) -> float:
         """
         Calculate cosine similarity between two vectors.
 
@@ -220,9 +219,12 @@ class SemanticAssert:
         Returns:
             float: Cosine similarity score between -1.0 and 1.0.
         """
-        dot_product = np.dot(vec1, vec2)
-        norm1 = np.linalg.norm(vec1)
-        norm2 = np.linalg.norm(vec2)
+        if len(vec1) != len(vec2):
+            raise ValueError("Embedding vectors must have the same length")
+
+        dot_product = sum(float(a) * float(b) for a, b in zip(vec1, vec2))
+        norm1 = math.sqrt(sum(float(value) ** 2 for value in vec1))
+        norm2 = math.sqrt(sum(float(value) ** 2 for value in vec2))
 
         if norm1 == 0 or norm2 == 0:
             return 0.0

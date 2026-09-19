@@ -7,9 +7,11 @@ Note: Some tests require the sentence-transformers model and may be slow on firs
 
 from __future__ import annotations
 
+import importlib.util
+import sys
+from types import ModuleType
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 
 from selenium_chatbot_test.assertions import SemanticAssert, _ModelLoader
@@ -32,8 +34,10 @@ class TestModelLoader:
         # Clear any existing cache for this test
         loader._models = {}
 
-        # Need to patch at the import location
-        with patch("sentence_transformers.SentenceTransformer") as mock_st:
+        fake_module = ModuleType("sentence_transformers")
+        mock_st = MagicMock()
+        fake_module.SentenceTransformer = mock_st
+        with patch.dict(sys.modules, {"sentence_transformers": fake_module}):
             mock_model = MagicMock()
             mock_st.return_value = mock_model
 
@@ -112,7 +116,7 @@ class TestSemanticAssertValidation:
         # Mock the model to avoid actual loading
         with patch.object(asserter._model_loader, "get_model") as mock_get:
             mock_model = MagicMock()
-            mock_model.encode.return_value = np.array([[1, 0], [1, 0]])
+            mock_model.encode.return_value = [[1, 0], [1, 0]]
             mock_get.return_value = mock_model
 
             # These should not raise ValueError for min_score
@@ -125,7 +129,7 @@ class TestCosineSimilarity:
 
     def test_identical_vectors(self):
         """Test that identical vectors have similarity 1.0."""
-        vec = np.array([1.0, 2.0, 3.0])
+        vec = [1.0, 2.0, 3.0]
 
         result = SemanticAssert._cosine_similarity(vec, vec)
 
@@ -133,8 +137,8 @@ class TestCosineSimilarity:
 
     def test_orthogonal_vectors(self):
         """Test that orthogonal vectors have similarity 0.0."""
-        vec1 = np.array([1.0, 0.0])
-        vec2 = np.array([0.0, 1.0])
+        vec1 = [1.0, 0.0]
+        vec2 = [0.0, 1.0]
 
         result = SemanticAssert._cosine_similarity(vec1, vec2)
 
@@ -142,8 +146,8 @@ class TestCosineSimilarity:
 
     def test_opposite_vectors(self):
         """Test that opposite vectors have similarity -1.0."""
-        vec1 = np.array([1.0, 0.0])
-        vec2 = np.array([-1.0, 0.0])
+        vec1 = [1.0, 0.0]
+        vec2 = [-1.0, 0.0]
 
         result = SemanticAssert._cosine_similarity(vec1, vec2)
 
@@ -151,8 +155,8 @@ class TestCosineSimilarity:
 
     def test_zero_vector_returns_zero(self):
         """Test that zero vector returns 0.0 similarity."""
-        vec1 = np.array([0.0, 0.0, 0.0])
-        vec2 = np.array([1.0, 2.0, 3.0])
+        vec1 = [0.0, 0.0, 0.0]
+        vec2 = [1.0, 2.0, 3.0]
 
         result = SemanticAssert._cosine_similarity(vec1, vec2)
 
@@ -169,7 +173,7 @@ class TestSemanticAssertAssertion:
         with patch.object(asserter._model_loader, "get_model") as mock_get:
             mock_model = MagicMock()
             # Return identical embeddings (similarity = 1.0)
-            mock_model.encode.return_value = np.array([[1, 0, 0], [1, 0, 0]])
+            mock_model.encode.return_value = [[1, 0, 0], [1, 0, 0]]
             mock_get.return_value = mock_model
 
             # Should not raise
@@ -182,7 +186,7 @@ class TestSemanticAssertAssertion:
         with patch.object(asserter._model_loader, "get_model") as mock_get:
             mock_model = MagicMock()
             # Return orthogonal embeddings (similarity = 0.0)
-            mock_model.encode.return_value = np.array([[1, 0], [0, 1]])
+            mock_model.encode.return_value = [[1, 0], [0, 1]]
             mock_get.return_value = mock_model
 
             with pytest.raises(
@@ -196,7 +200,7 @@ class TestSemanticAssertAssertion:
 
         with patch.object(asserter._model_loader, "get_model") as mock_get:
             mock_model = MagicMock()
-            mock_model.encode.return_value = np.array([[1, 0], [0, 1]])
+            mock_model.encode.return_value = [[1, 0], [0, 1]]
             mock_get.return_value = mock_model
 
             with pytest.raises(AssertionError) as exc_info:
@@ -211,7 +215,7 @@ class TestSemanticAssertAssertion:
 
         with patch.object(asserter._model_loader, "get_model") as mock_get:
             mock_model = MagicMock()
-            mock_model.encode.return_value = np.array([[1, 0], [0, 1]])
+            mock_model.encode.return_value = [[1, 0], [0, 1]]
             mock_get.return_value = mock_model
 
             with pytest.raises(AssertionError) as exc_info:
@@ -233,7 +237,7 @@ class TestGetSimilarityScore:
 
         with patch.object(asserter._model_loader, "get_model") as mock_get:
             mock_model = MagicMock()
-            mock_model.encode.return_value = np.array([[1, 0], [1, 0]])
+            mock_model.encode.return_value = [[1, 0], [1, 0]]
             mock_get.return_value = mock_model
 
             score = asserter.get_similarity_score("hello", "hi")
@@ -247,9 +251,10 @@ class TestGetSimilarityScore:
         with patch.object(asserter._model_loader, "get_model") as mock_get:
             mock_model = MagicMock()
             # Random normalized vectors
-            mock_model.encode.return_value = np.array(
-                [[0.5, 0.5, 0.5], [0.3, 0.7, 0.2]]
-            )
+            mock_model.encode.return_value = [
+                [0.5, 0.5, 0.5],
+                [0.3, 0.7, 0.2],
+            ]
             mock_get.return_value = mock_model
 
             score = asserter.get_similarity_score("text1", "text2")
@@ -258,6 +263,10 @@ class TestGetSimilarityScore:
 
 
 # Integration tests (require actual model - mark as slow)
+@pytest.mark.skipif(
+    importlib.util.find_spec("sentence_transformers") is None,
+    reason="install the semantic extra to run integration tests",
+)
 @pytest.mark.slow
 class TestSemanticAssertIntegration:
     """Integration tests that use the actual sentence-transformers model.
