@@ -67,6 +67,9 @@ Standard Selenium fails on GenAI interfaces because:
 # Install from PyPI
 pip install selenium-chatbot-test
 
+# Add ML-powered semantic assertions when needed
+pip install 'selenium-chatbot-test[semantic]'
+
 # Or install from source
 git clone https://github.com/godhiraj-code/selenium-chatbot-test.git
 cd selenium-chatbot-test
@@ -82,7 +85,7 @@ from selenium_chatbot_test import StreamWaiter, SemanticAssert, LatencyMonitor
 
 driver = webdriver.Chrome()
 waiter = StreamWaiter()
-asserter = SemanticAssert()
+asserter = SemanticAssert()  # Requires installation with the [semantic] extra
 
 # Navigate to chatbot
 driver.get("https://your-chatbot-url.com")
@@ -139,6 +142,12 @@ element = waiter.wait_for_stream_end(
 ### SemanticAssert
 
 Performs semantic similarity assertions using sentence-transformers.
+
+Install the optional ML dependencies first:
+
+```bash
+pip install 'selenium-chatbot-test[semantic]'
+```
 
 ```python
 asserter = SemanticAssert()
@@ -211,8 +220,8 @@ mypy selenium_chatbot_test --ignore-missing-imports
 
 - Python ≥ 3.9
 - `selenium` ≥ 4.0.0
-- `sentence-transformers` ≥ 2.2.0
-- `numpy` ≥ 1.21.0
+- Optional for semantic assertions: `sentence-transformers` ≥ 2.2.0 and
+  `numpy` ≥ 1.21.0, installed with `selenium-chatbot-test[semantic]`
 
 ## Changelog
 

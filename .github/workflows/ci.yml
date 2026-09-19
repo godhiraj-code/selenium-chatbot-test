@@ -28,6 +28,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .[dev]
+
+      - name: Verify core import without semantic extras
+        run: |
+          python -c "from selenium_chatbot_test import LatencyMonitor, SemanticAssert, StreamWaiter"
       
       - name: Run linting
         run: |
@@ -69,7 +73,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .[dev]
+          pip install -e .[dev,semantic]
       
       - name: Run integration tests
         run: |
