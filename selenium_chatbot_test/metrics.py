@@ -239,6 +239,10 @@ class LatencyMonitor:
         Raises:
             JavascriptException: If the observer cannot be injected.
         """
+        if self._monitor_key is not None:
+            raise RuntimeError("LatencyMonitor is already active")
+        self._metrics = LatencyMetrics()
+
         if not isinstance(self._locator, (tuple, list)) or len(self._locator) != 2:
             raise ValueError(
                 f"Locator must be a tuple of (type, value), got: {self._locator}"
