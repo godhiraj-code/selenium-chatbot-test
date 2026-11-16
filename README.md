@@ -3,63 +3,46 @@
 [![CI](https://github.com/godhiraj-code/selenium-chatbot-test/actions/workflows/ci.yml/badge.svg)](https://github.com/godhiraj-code/selenium-chatbot-test/actions/workflows/ci.yml)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub](https://img.shields.io/badge/GitHub-Repository-black.svg)](https://github.com/godhiraj-code/selenium-chatbot-test)
 
-A Python library that extends Selenium WebDriver to reliably test **Generative AI interfaces** — Chatbots, Copilots, and Streaming UIs.
+Selenium helpers for testing chatbots, copilots, and other streaming interfaces: wait for DOM activity to settle, compare response similarity, and measure browser-observed latency.
 
 **Author**: [Dhiraj Das](https://www.dhirajdas.dev) | **Version**: 0.2.0
 
-## The Problem
+## What it provides
 
-Standard Selenium fails on GenAI interfaces because:
+A visible response element may still be changing, and generated answers may vary
+between runs. This library adds three helpers to existing Selenium tests:
 
-1. **Streaming Responses**: Standard waits read partial text mid-stream
-2. **Non-Deterministic Output**: Exact string assertions fail on AI-generated content
-
-## The Solution
-
-`selenium-chatbot-test` provides three powerful tools:
-
-| Module | Purpose |
+| Helper | Purpose |
 |--------|---------|
-| `StreamWaiter` | Waits for streaming responses to complete using MutationObserver |
-| `SemanticAssert` | Asserts semantic similarity instead of exact string matching |
-| `LatencyMonitor` | Measures TTFT and total latency with millisecond precision |
+| `StreamWaiter` | Wait for a configurable period without text or child-node mutations |
+| `SemanticAssert` | Compare sentence embeddings with a cosine-similarity threshold |
+| `LatencyMonitor` | Record time to the first and last observed DOM mutations |
 
-## ✨ Key Benefits
+The stream waiter uses the browser's `MutationObserver` rather than a polling
+loop. Semantic models load on first use and are cached in the Python process;
+they can run on CPU without a GPU. The latency monitor is a context manager that
+disconnects its observer on exit. The package includes type hints and a `py.typed`
+marker.
 
-- **Reliable Stream Detection** — No more flaky tests due to partial text capture
-- **Non-Deterministic Friendly** — Test AI outputs without exact string matching
-- **Performance Insights** — Built-in TTFT and latency metrics for every interaction
-- **CI/CD Ready** — Silent CPU fallback, no GPU required
-- **Zero Polling** — Pure JavaScript MutationObserver, no `time.sleep()` hacks
+## Limitations
 
-## 🚀 What Makes It Unique
-
-| Feature | Traditional Selenium | selenium-chatbot-test |
-|---------|---------------------|----------------------|
-| Streaming Text | ❌ Reads partial text | ✅ Waits for complete response |
-| AI Assertions | ❌ Exact match only | ✅ Semantic similarity (ML-powered) |
-| Latency Metrics | ❌ Manual timing | ✅ Automatic TTFT tracking |
-| Memory Safety | ❌ Potential leaks | ✅ Auto-cleanup observers |
-
-## 🏆 Standing Out Features
-
-1. **MutationObserver-Based Waiting** — Industry-first approach using browser-native APIs instead of polling
-2. **Lazy Model Loading** — Heavy ML models load on first use, not import (fast test startup)
-3. **Semantic Embeddings** — Uses `all-MiniLM-L6-v2` for blazing-fast similarity scoring
-4. **Context Manager Pattern** — Clean, Pythonic API with automatic resource cleanup
-5. **Full Type Hints** — PEP-561 compliant with `py.typed` marker
-
-## ⚠️ Limitations
-
-| Limitation | Details |
-|------------|---------|
-| **Model Download** | First run downloads ~90MB model (cached thereafter) |
-| **Semantic Threshold** | Requires tuning `min_score` per use case |
-| **Browser Support** | Tested on Chrome; other browsers may vary |
-| **JavaScript Required** | Target pages must allow script injection |
-| **Not for Unit Tests** | Designed for E2E/integration testing only |
+- **Quiet is not necessarily complete.** `StreamWaiter` treats a pause of
+  `silence_timeout` seconds as completion, including an initially quiet element.
+  A delayed first chunk or a longer pause between chunks can return early. Use
+  application-specific start/completion checks where available and tune the
+  silence window for the interface.
+- **Similarity is not correctness.** Tune `min_score` for the use case and retain
+  assertions for required facts and behavior. A high similarity score does not
+  establish factual accuracy.
+- **Semantic assertions need optional dependencies.** The first use may download
+  the selected model (about 90 MB for `all-MiniLM-L6-v2`), which is cached for
+  subsequent use.
+- **Latency is measured at the DOM.** These timings are not server-side model
+  timings, and mutation counts are not tokenizer token counts.
+- **Browser integration is required.** The target element must exist before
+  observation starts, and the page must allow script execution. The demo uses
+  Chrome; validate other browsers in the target environment.
 
 ## Installation
 
@@ -78,6 +61,10 @@ pip install -e .
 
 ## Quick Start
 
+This template requires the `[semantic]` extra. Replace the URL and locators with
+your application's values. The response container must already exist; add the
+application's own response-start and completion checks when available.
+
 ```python
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -94,28 +81,28 @@ driver.get("https://your-chatbot-url.com")
 with LatencyMonitor(driver, (By.ID, "response-box")) as monitor:
     driver.find_element(By.ID, "send-btn").click()
     
-    # Wait for stream to complete (not partial text!)
+    # Wait for the configured quiet period
     element = waiter.wait_for_stream_end(
         driver,
         (By.ID, "response-box"),
-        silence_timeout=0.5,  # 500ms of silence = stream complete
+        silence_timeout=0.5,  # Treat 500 ms without mutations as settled
         timeout=30.0
     )
 
-# Get the complete response
+# Read the response after the quiet period
 response = element.text
 print(f"Response: {response}")
 
-# Assert semantic similarity (works with non-deterministic AI!)
+# Compare similarity to the expected response
 asserter.assert_similarity(
     response,
     "Hello! How can I help you today?",
-    min_score=0.7  # 70% semantic similarity required
+    min_score=0.7  # Minimum cosine-similarity score
 )
 
 # Check latency metrics
-print(f"Time-To-First-Token: {monitor.metrics.ttft_ms:.1f}ms")
-print(f"Total Latency: {monitor.metrics.total_ms:.1f}ms")
+print(f"Time to first mutation: {monitor.metrics.ttft_ms} ms")
+print(f"Time to last mutation: {monitor.metrics.total_ms} ms")
 
 driver.quit()
 ```
@@ -124,7 +111,7 @@ driver.quit()
 
 ### StreamWaiter
 
-Waits for streaming content to complete using JavaScript MutationObserver.
+Waits for a quiet period in the target element using JavaScript `MutationObserver`.
 
 ```python
 waiter = StreamWaiter()
@@ -157,7 +144,7 @@ asserter.assert_similarity(
     actual="The weather is nice today",
     expected="It's a beautiful day",
     min_score=0.7,
-    model_name="all-MiniLM-L6-v2"  # Fast and accurate
+    model_name="all-MiniLM-L6-v2"
 )
 
 # Or just get the score
@@ -185,9 +172,12 @@ print(f"Mutations: {monitor.metrics.token_count}")
 ```
 
 **Metrics**:
-- `ttft_ms`: Time-To-First-Token (first mutation)
-- `total_ms`: Total response time (last mutation)
-- `token_count`: Number of mutations observed
+- `ttft_ms`: Milliseconds from monitor start to the first observed mutation.
+- `total_ms`: Milliseconds from monitor start to the last observed mutation.
+- `token_count`: Number of mutation records observed, not an exact token count.
+
+Timing values remain `None` if no mutations are observed. Read metrics after the
+context manager exits.
 
 ## Running the Demo
 
@@ -205,14 +195,14 @@ python demo_chatbot.py --headless
 # Clone and install dev dependencies
 git clone https://github.com/godhiraj-code/selenium-chatbot-test.git
 cd selenium-chatbot-test
-pip install -e .[dev]
+pip install -e ".[dev]"
 
 # Run tests
 pytest tests/ -v -m "not slow"
 
-# Run linting
-black selenium_chatbot_test tests
-isort selenium_chatbot_test tests
+# Check formatting
+black --check selenium_chatbot_test tests
+isort --check-only selenium_chatbot_test tests
 mypy selenium_chatbot_test --ignore-missing-imports
 ```
 
@@ -229,4 +219,4 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+Licensed under MIT, as declared in [pyproject.toml](pyproject.toml).
