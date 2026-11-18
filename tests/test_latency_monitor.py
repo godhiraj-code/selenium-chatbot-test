@@ -229,3 +229,22 @@ class TestLatencyMonitorScriptExecution:
         retrieve_script, args = mock_driver._execute_script_calls[1]
         assert "firstMutationTime" in retrieve_script
         assert "__latencyMonitor_test_123" in args
+
+
+def test_reusing_monitor_resets_metrics(mock_driver, sample_locator):
+    monitor = LatencyMonitor(mock_driver, sample_locator)
+    with monitor:
+        pass
+    assert monitor.metrics.ttft_ms is not None
+    with monitor:
+        assert monitor.metrics.ttft_ms is None
+        assert monitor.metrics.total_ms is None
+        assert monitor.metrics.token_count == 0
+
+
+def test_nested_entry_preserves_active_monitor(mock_driver, sample_locator):
+    monitor = LatencyMonitor(mock_driver, sample_locator)
+    with monitor:
+        with pytest.raises(RuntimeError, match="already active"):
+            monitor.__enter__()
+    assert len(mock_driver._execute_script_calls) == 2
